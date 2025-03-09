@@ -1,11 +1,11 @@
-# go-run
+# go-runner
 
 A lightweight and flexible runner abstraction for Go applications that makes concurrent task execution simple.
 
 ## Installation
 
 ```bash
-go get github.com/bulatsan/go-run
+go get github.com/bulatsan/go-runner
 ```
 
 ## Features
@@ -29,12 +29,12 @@ import (
 	"fmt"
 	"time"
 
-	run "github.com/bulatsan/go-run"
+	runner "github.com/bulatsan/go-runner"
 )
 
 func main() {
 	// Create a simple runner
-	simpleRunner := run.New(func(ctx context.Context) error {
+	simpleRunner := runner.New(func(ctx context.Context) error {
 		fmt.Println("Running a task...")
 		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Task completed!")
@@ -53,10 +53,10 @@ func main() {
 
 ```go
 // Create a runner that always returns an error
-errRunner := run.Err(fmt.Errorf("something went wrong"))
+errRunner := runner.Err(fmt.Errorf("something went wrong"))
 
 // Or create a runner that always succeeds
-okRunner := run.OK()
+okRunner := runner.OK()
 ```
 
 ### Running Multiple Tasks in Parallel
@@ -69,19 +69,19 @@ import (
 	"fmt"
 	"time"
 
-	run "github.com/bulatsan/go-run"
+	runner "github.com/bulatsan/go-runner"
 )
 
 func main() {
 	// Create several runners
-	runner1 := run.New(func(ctx context.Context) error {
+	runner1 := runner.New(func(ctx context.Context) error {
 		fmt.Println("Runner 1 started")
 		time.Sleep(100 * time.Millisecond)
 		fmt.Println("Runner 1 completed")
 		return nil
 	})
 
-	runner2 := run.New(func(ctx context.Context) error {
+	runner2 := runner.New(func(ctx context.Context) error {
 		fmt.Println("Runner 2 started")
 		time.Sleep(200 * time.Millisecond)
 		fmt.Println("Runner 2 completed")
@@ -89,7 +89,7 @@ func main() {
 	})
 
 	// Join them to run in parallel
-	combined := run.Join(runner1, runner2)
+	combined := runner.Join(runner1, runner2)
 	
 	// Run them all at once
 	err := combined.Run(context.Background())
@@ -114,12 +114,12 @@ import (
 	"time"
 	"errors"
 
-	run "github.com/bulatsan/go-run"
+	runner "github.com/bulatsan/go-runner"
 )
 
 func main() {
 	// Create a runner that fails quickly
-	failingRunner := run.New(func(ctx context.Context) error {
+	failingRunner := runner.New(func(ctx context.Context) error {
 		fmt.Println("Failing runner started")
 		time.Sleep(50 * time.Millisecond)
 		fmt.Println("Failing runner returning error")
@@ -127,7 +127,7 @@ func main() {
 	})
 
 	// Create a runner that takes longer
-	slowRunner := run.New(func(ctx context.Context) error {
+	slowRunner := runner.New(func(ctx context.Context) error {
 		fmt.Println("Slow runner started")
 		select {
 		case <-time.After(1 * time.Second):
@@ -140,7 +140,7 @@ func main() {
 	})
 
 	// Join them
-	combined := run.Join(failingRunner, slowRunner)
+	combined := runner.Join(failingRunner, slowRunner)
 	
 	// The failing runner will cause the slow runner to be cancelled
 	err := combined.Run(context.Background())
@@ -162,7 +162,7 @@ import (
 	"syscall"
 	"time"
 
-	run "github.com/bulatsan/go-run"
+	runner "github.com/bulatsan/go-runner"
 )
 
 func main() {
@@ -178,7 +178,7 @@ func main() {
 	})
 
 	// Create a runner for the HTTP server
-	serverRunner := run.New(func(ctx context.Context) error {
+	serverRunner := runner.New(func(ctx context.Context) error {
 		fmt.Println("Starting HTTP server on :8080")
 		
 		// Start the server
@@ -190,7 +190,7 @@ func main() {
 	})
 
 	// Create a runner for graceful shutdown
-	shutdownRunner := run.New(func(ctx context.Context) error {
+	shutdownRunner := runner.New(func(ctx context.Context) error {
 		// Wait for context cancellation (e.g., SIGINT or SIGTERM)
 		<-ctx.Done()
 		
@@ -206,7 +206,7 @@ func main() {
 
 	// Create a runner that handles OS signals
 	signalCtx, signalCancel := context.WithCancel(context.Background())
-	signalRunner := run.New(func(ctx context.Context) error {
+	signalRunner := runner.New(func(ctx context.Context) error {
 		// Set up signal handling
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
@@ -224,7 +224,7 @@ func main() {
 	})
 
 	// Join all runners
-	combined := run.Join(serverRunner, shutdownRunner, signalRunner)
+	combined := runner.Join(serverRunner, shutdownRunner, signalRunner)
 	
 	// Run everything
 	if err := combined.Run(signalCtx); err != nil {
